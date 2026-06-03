@@ -1,6 +1,6 @@
 'use client';
 
-import { Settings2, Scissors, FastForward, Type, Monitor, Moon } from 'lucide-react';
+import { Settings2, Scissors, FastForward, Type, Monitor, Moon, ShieldAlert } from 'lucide-react';
 
 export interface AdvancedOptions {
     trim_start?: string;
@@ -14,6 +14,8 @@ export interface AdvancedOptions {
     volume?: number;
     output_name?: string;
     grayscale?: boolean;
+    profanity_detection?: boolean;
+    nsfw_blur?: boolean;
 }
 
 interface AdvancedControlsProps {
@@ -121,16 +123,14 @@ export default function AdvancedControls({ options, setOptions }: AdvancedContro
                 </div>
 
                 {/* Fade In / Fade Out */}
-                <div className="glass p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3 flex items-center justify-between">
-                    <div className="space-y-1">
-                        <div className="flex items-center space-x-2 text-white/60 mb-1">
-                            <Moon size={14} />
-                            <span className="text-sm font-medium">Fade Transitions</span>
-                        </div>
-                        <p className="text-[10px] text-white/30">Smooth entry and exit animations</p>
+                <div className="glass p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col gap-3">
+                    <div className="flex items-center space-x-2 text-white/60">
+                        <Moon size={14} />
+                        <span className="text-sm font-medium">Fade Transitions</span>
                     </div>
+                    <p className="text-[10px] text-white/30 -mt-1">Smooth entry and exit animations</p>
 
-                    <div className="flex space-x-4">
+                    <div className="flex flex-wrap gap-4">
                         <label className="flex items-center space-x-2 cursor-pointer group">
                             <input
                                 type="checkbox"
@@ -154,6 +154,82 @@ export default function AdvancedControls({ options, setOptions }: AdvancedContro
                                 {options.fade_out && <span className="text-white text-xs">✓</span>}
                             </div>
                             <span className="text-xs font-medium text-white/80">Fade Out</span>
+                        </label>
+                    </div>
+                </div>
+
+                {/* Profanity Detection */}
+                <div className="glass p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col gap-3">
+                    <div className="flex items-center space-x-2 text-white/60">
+                        <ShieldAlert size={14} />
+                        <span className="text-sm font-medium">Profanity Detection</span>
+                    </div>
+                    <p className="text-[10px] text-white/30 -mt-1">Auto-detect and beep bad words</p>
+
+                    <div className="flex items-center gap-4">
+                        <label className="flex items-center space-x-2 cursor-pointer group">
+                            <input
+                                type="radio"
+                                name="profanity"
+                                className="hidden"
+                                checked={options.profanity_detection || false}
+                                onChange={() => updateOption('profanity_detection', true)}
+                            />
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${options.profanity_detection ? 'bg-red-500 border-red-500' : 'border-white/20 group-hover:border-white/40'}`}>
+                                {options.profanity_detection && <div className="w-2 h-2 rounded-full bg-white" />}
+                            </div>
+                            <span className="text-xs font-medium text-white/80">Yes</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer group">
+                            <input
+                                type="radio"
+                                name="profanity"
+                                className="hidden"
+                                checked={!(options.profanity_detection || false)}
+                                onChange={() => updateOption('profanity_detection', false)}
+                            />
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${!options.profanity_detection ? 'bg-white/40 border-white/40' : 'border-white/20 group-hover:border-white/40'}`}>
+                                {!options.profanity_detection && <div className="w-2 h-2 rounded-full bg-white" />}
+                            </div>
+                            <span className="text-xs font-medium text-white/80">No</span>
+                        </label>
+                    </div>
+                </div>
+
+                {/* NSFW Blur */}
+                <div className="glass p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col gap-3">
+                    <div className="flex items-center space-x-2 text-white/60">
+                        <ShieldAlert size={14} className="text-orange-400" />
+                        <span className="text-sm font-medium">NSFW Blur</span>
+                    </div>
+                    <p className="text-[10px] text-white/30 -mt-1">Auto-blur sensitive visual content</p>
+
+                    <div className="flex items-center gap-4">
+                        <label className="flex items-center space-x-2 cursor-pointer group">
+                            <input
+                                type="radio"
+                                name="nsfw_blur"
+                                className="hidden"
+                                checked={options.nsfw_blur || false}
+                                onChange={() => updateOption('nsfw_blur', true)}
+                            />
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${options.nsfw_blur ? 'bg-orange-500 border-orange-500' : 'border-white/20 group-hover:border-white/40'}`}>
+                                {options.nsfw_blur && <div className="w-2 h-2 rounded-full bg-white" />}
+                            </div>
+                            <span className="text-xs font-medium text-white/80">Yes</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer group">
+                            <input
+                                type="radio"
+                                name="nsfw_blur"
+                                className="hidden"
+                                checked={!(options.nsfw_blur || false)}
+                                onChange={() => updateOption('nsfw_blur', false)}
+                            />
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${!options.nsfw_blur ? 'bg-white/40 border-white/40' : 'border-white/20 group-hover:border-white/40'}`}>
+                                {!options.nsfw_blur && <div className="w-2 h-2 rounded-full bg-white" />}
+                            </div>
+                            <span className="text-xs font-medium text-white/80">No</span>
                         </label>
                     </div>
                 </div>

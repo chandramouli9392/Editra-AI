@@ -6,3 +6,12 @@ google-generativeai
 python-dotenv
 typing-extensions
 gunicorn
+gradio_client
+torch
+better-profanity
+pydub
+edge-tts
+faster-whisper
+whisperx
+numpy<2.0.0
+mediapipe

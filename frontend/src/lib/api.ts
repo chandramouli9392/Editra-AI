@@ -19,6 +19,8 @@ export interface AdvancedOptions {
     volume?: number;
     output_name?: string;
     grayscale?: boolean;
+    profanity_detection?: boolean;
+    nsfw_blur?: boolean;
 }
 
 export async function processVideo(
@@ -51,6 +53,8 @@ export async function processVideo(
         if (advancedOptions.volume !== undefined && advancedOptions.volume !== 100) formData.append("volume", advancedOptions.volume.toString());
         if (advancedOptions.output_name) formData.append("output_name", advancedOptions.output_name);
         if (advancedOptions.grayscale) formData.append("grayscale", "true");
+        if (advancedOptions.profanity_detection) formData.append("profanity_detection", "true");
+        if (advancedOptions.nsfw_blur) formData.append("nsfw_blur", "true");
     }
 
     const response = await fetch(`${API_BASE_URL}/process`, {

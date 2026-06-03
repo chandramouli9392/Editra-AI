@@ -14,6 +14,8 @@ body {
   color: rgb(var(--foreground-rgb));
   background: radial-gradient(circle at center, #0a0a1a 0%, #020205 100%);
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

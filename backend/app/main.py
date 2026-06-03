@@ -1,4 +1,7 @@
 import os
+import subprocess
+import uuid
+
 import shutil
 from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -9,6 +12,11 @@ import asyncio
 from .core.config import UPLOAD_FOLDER, OUTPUT_FOLDER
 from .services.video_service import generate_video, merge_audio_video, default_merge, apply_advanced_filters
 from .services.music_service import generate_music
+from .services.transcription_service import transcribe_audio
+from .services.profanity_service import detect_profanity_timestamps, consolidate_timestamps, censor_text
+from .services.tts_service import generate_tts
+from .services.beep_service import apply_beeps
+from .services.blur_service import blur_service
 from .utils.metadata_utils import get_video_metadata, get_video_duration
 
 app = FastAPI(title="AatoZen.AI API")
@@ -42,7 +50,9 @@ async def process_video(
     fade_out: bool = Form(False),
     volume: Optional[int] = Form(100),
     output_name: Optional[str] = Form("final"),
-    grayscale: Optional[bool] = Form(False)
+    grayscale: Optional[bool] = Form(False),
+    profanity_detection: Optional[bool] = Form(False),
+    nsfw_blur: Optional[bool] = Form(False)
 ):
     async def event_generator():
         try:
@@ -74,6 +84,104 @@ async def process_video(
             else:
                 merged_video = default_merge(metadata_list)
                 
+            # 2.5 LOCAL WHISPER + WHISPERX Profanity Censoring Pipeline
+            if profanity_detection:
+                yield f"data: {json.dumps({'status': 'LOCAL WHISPER STARTED', 'progress': 50})}\n\n"
+                try:
+                    # 1. Local Transcription & Alignment
+                    transcription_data = transcribe_audio(merged_video)
+                    full_text = transcription_data.get("text", "")
+                    detected_lang = transcription_data["language"]
+                    word_segments = transcription_data.get("segments", [])
+                    
+                    if not full_text:
+                        print("PROFANITY PIPELINE: No speech detected for censoring.")
+                        yield f"data: {json.dumps({'status': 'No speech detected.', 'progress': 60})}\n\n"
+                    else:
+                        yield f"data: {json.dumps({'status': 'PROFANITY DETECTION STARTED', 'progress': 55})}\n\n"
+                        
+                        # 2. Detect profanity at word level
+                        bad_timestamps = detect_profanity_timestamps(word_segments, detected_lang)
+                        
+                        if bad_timestamps:
+                            print(f"PROFANITY DETECTED: {len(bad_timestamps)} instances.")
+                            yield f"data: {json.dumps({'status': 'PROFANITY DETECTED', 'progress': 58})}\n\n"
+                            
+                            # Consolidate for smoother muting
+                            merged_timestamps = consolidate_timestamps(bad_timestamps)
+                            
+                            # 3. Apply FFmpeg Muting/Beeping
+                            yield f"data: {json.dumps({'status': 'AUDIO MUTING STARTED', 'progress': 60})}\n\n"
+                            censored_video = os.path.join(OUTPUT_FOLDER, "censored_output.mp4")
+                            
+                            apply_beeps(merged_video, censored_video, merged_timestamps)
+                            
+                            if os.path.exists(censored_video):
+                                print("AUDIO MUTING SUCCESSFUL ✓")
+                                yield f"data: {json.dumps({'status': 'AUDIO MUTING SUCCESSFUL', 'progress': 65})}\n\n"
+                                # Replace merged_video with the censored version
+                                if os.path.exists(merged_video) and "merged.mp4" in merged_video:
+                                    try: os.remove(merged_video)
+                                    except: pass
+                                merged_video = censored_video
+                                print("FINAL SAFE VIDEO GENERATED ✓")
+                            else:
+                                raise Exception("FFmpeg muting failed to produce output.")
+                        else:
+                            yield f"data: {json.dumps({'status': 'No Profanity Detected.', 'progress': 60})}\n\n"
+                            print("PROFANITY PIPELINE: No profanity detected.")
+                            
+                except Exception as e:
+                    print(f"PROFANITY PIPELINE ERROR: {str(e)}")
+                    yield f"data: {json.dumps({'status': 'Profanity Pipeline Error (Skipping)', 'progress': 60})}\n\n"
+                
+            # 2.7 NSFW Detection & Auto Blur Pipeline
+            if nsfw_blur:
+                yield f"data: {json.dumps({'status': 'Extracting Video Frames...', 'progress': 52})}\n\n"
+                try:
+                    # process_video handles extraction, detection, blurring, and re-assembly
+                    # It takes a generator callback for progress updates
+                    def progress_callback(status, progress):
+                        # We'll use a wrapper to send the yield since we're in a nested function
+                        # But actually, process_video is sync in my current implementation, 
+                        # so I can't easily yield from inside it unless I make it async or use a callback that yields.
+                        # For now, I'll just let it run and it will log to console.
+                        pass
+                    
+                    # To allow yielding from within the service, I'll modify the service to accept a yield function
+                    # or just handle the steps here. 
+                    # Let's keep it simple and handle the service call.
+                    
+                    # We need a way to yield progress from inside blur_service.process_video
+                    # Since event_generator is an async generator, we can pass a callback that yields.
+                    
+                    async def async_yield_progress(status, progress):
+                        await asyncio.sleep(0) # Yield control
+                        # This won't work easily because blur_service.process_video is sync.
+                        # I'll just update the status before and after for now.
+                        pass
+
+                    # Actually, I can just do the steps here if I want more granular control, 
+                    # but modularity is better.
+                    
+                    yield f"data: {json.dumps({'status': 'Moderating Content...', 'progress': 55})}\n\n"
+                    safe_video = blur_service.process_video(merged_video, 
+                        yield_progress=lambda s, p: print(f"NSFW PROGRESS: {s} ({p}%)"))
+                    
+                    if os.path.exists(safe_video) and safe_video != merged_video:
+                        # Replace merged_video with the safe version
+                        if os.path.exists(merged_video) and ("merged.mp4" in merged_video or "censored_output.mp4" in merged_video):
+                            try: os.remove(merged_video)
+                            except: pass
+                        merged_video = safe_video
+                        yield f"data: {json.dumps({'status': 'NSFW Moderation Complete', 'progress': 65})}\n\n"
+                    else:
+                        yield f"data: {json.dumps({'status': 'No sensitive content detected.', 'progress': 65})}\n\n"
+
+                except Exception as e:
+                    print(f"NSFW PIPELINE ERROR: {str(e)}")
+                    yield f"data: {json.dumps({'status': 'NSFW Pipeline Error (Skipping)', 'progress': 65})}\n\n"
+
             # 3. Handle Music Logic
             yield f"data: {json.dumps({'status': 'Synthesizing Sonic Atmosphere...', 'progress': 70})}\n\n"
             audio_path = None
@@ -140,7 +248,10 @@ async def process_video(
             
             # Point 4: Safety Check
             if not os.path.exists(final_video):
+                print(f"FINAL RENDER STATUS: Failed ✗ (File not found: {final_video})")
                 raise Exception("Final video generation failed.")
+            
+            print(f"FINAL RENDER STATUS: Success ✓ (Output: {final_video})")
             
             # Signal completion with consistent filename
             yield f"data: {json.dumps({'status': 'Complete', 'progress': 100, 'filename': f'{safe_output_name}.mp4'})}\n\n"
@@ -159,3 +270,53 @@ async def download_video(filename: str):
     if os.path.exists(path):
         return FileResponse(path, media_type="video/mp4", filename=filename)
     raise HTTPException(status_code=404, detail="Final video generation failed.")
+
+@app.post("/quicklook/apply-preset")
+async def apply_quicklook_preset(video: UploadFile = File(...), preset: str = Form(...)):
+    # 1. Save incoming video
+    unique_id = str(uuid.uuid4())[:8]
+    input_path = os.path.join(UPLOAD_FOLDER, f"ql_input_{unique_id}_{video.filename}")
+    with open(input_path, "wb") as buffer:
+        shutil.copyfileobj(video.file, buffer)
+    
+    # 2. Map preset to LUT
+    lut_filename = f"{preset.lower().replace(' ', '_').replace('&', '')}.cube"
+    # Handling specific cases if necessary
+    if preset.lower() == "teal & orange":
+        lut_filename = "teal_orange.cube"
+        
+    lut_path = os.path.join(os.path.dirname(__file__), "presets", "luts", lut_filename)
+    
+    if not os.path.exists(lut_path):
+        # Fallback to a basic color EQ if LUT doesn't exist, though we generated them
+        print(f"Warning: LUT {lut_path} not found.")
+        raise HTTPException(status_code=400, detail="Preset LUT not found.")
+    
+    # Convert path to forward slashes for FFmpeg on Windows
+    lut_path_ffmpeg = lut_path.replace("\\", "/")
+    # Escape colon for FFmpeg filter (e.g., C:/path -> C\:/path)
+    if ":" in lut_path_ffmpeg:
+        lut_path_ffmpeg = lut_path_ffmpeg.replace(":", "\\:")
+    
+    # 3. Apply FFmpeg LUT
+    output_filename = f"ql_output_{unique_id}.mp4"
+    output_path = os.path.join(OUTPUT_FOLDER, output_filename)
+    
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-vf", f"lut3d='{lut_path_ffmpeg}'",
+        "-c:a", "copy",
+        output_path
+    ]
+    
+    print(f"Executing Quick Look preset: {' '.join(cmd)}")
+    process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
+    if process.returncode != 0 or not os.path.exists(output_path):
+        print(f"FFmpeg error: {process.stderr.decode('utf-8', errors='ignore')}")
+        raise HTTPException(status_code=500, detail="Failed to apply color grading preset.")
+        
+    # Return the path so frontend can download/preview it
+    return {"status": "success", "url": f"/download/{output_filename}"}
+
