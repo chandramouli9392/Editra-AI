@@ -1,59 +1,174 @@
-# AatoZen.AI - Where AI Meets Effortless Editing
+# 🚀 EDITRA
 
-A production-ready monorepo for AI-orchestrated video editing and BGM generation.
+### AI-Powered Multimodal Video Editing Platform
 
-## Project Structure
+> "Why spend hours editing content when AI can understand, moderate, transform, and render it automatically?"
 
-```
-AatoZen.AI/
-├── backend/            # FastAPI Backend
-│   ├── app/
-│   │   ├── main.py     # Entry point & Routes
-│   │   ├── core/       # Config & Security
-│   │   ├── services/   # Video & Music Logic
-│   │   └── utils/      # FFmpeg & Metadata
-│   ├── uploads/        # Input storage
-│   ├── outputs/        # Processed results
-│   ├── .env            # Credentials (API Keys)
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/           # Next.js Frontend
-│   ├── src/
-│   │   ├── app/
-│   │   ├── components/ # AI-molecule Background, Glass UI
-│   │   └── lib/        # API Client
-│   ├── public/
-│   ├── package.json
-│   ├── next.config.js
-│   └── tailwind.config.ts
-└── README.md
-```
+EDITRA is an advanced AI-powered video editing ecosystem that combines Computer Vision, Speech Processing, Generative AI, and Automation Pipelines into a single intelligent platform.
 
-## Setup Instructions
-
-### Backend (FastAPI)
-1. Navigate to `backend/`.
-2. Install dependencies: `pip install -r requirements.txt`.
-3. Add your `GEMINI_API_KEY` and `STABILITY_API_KEY` to `.env`.
-4. Run the server: `uvicorn app.main:app --reload`.
-
-### Frontend (Next.js)
-1. Navigate to `frontend/`.
-2. Install dependencies: `npm install`.
-3. Run the development server: `npm run dev`.
-4. Open [http://localhost:3000](http://localhost:3000).
-
-## Deployment
-
-Are you ready to take AatoZen.AI live? We've prepared a comprehensive, step-by-step guide for deploying the frontend on **Vercel** and the backend on **Render**.
-
-Please see the [Deployment Guide (DEPLOYMENT.md)](DEPLOYMENT.md) for full instructions.
-
-## Features
-- **AI Video Orchestration**: Gemini-powered FFmpeg command generation.
-- **AI Background Music**: Stability AI-powered BGM synthesis.
-- **Premium UI**: Glassmorphism design with animated AI molecule background.
-- **Streamlined Workflow**: Upload -> Orchestrate -> Preview -> Download.
+Designed to automate tedious editing tasks, EDITRA transforms raw videos into production-ready content using AI-driven moderation, transcription, dubbing, subtitle generation, and rendering workflows.
 
 ---
-© 2026 AatoZen.AI
+
+## 🔥 Core Capabilities
+
+### 🎙️ Speech Intelligence
+
+* AI-powered Speech-to-Text
+* Word-Level Timestamp Generation
+* Automatic Subtitle Creation
+* Multi-language Processing
+* Audio Analysis Pipeline
+
+### 🤖 AI Content Moderation
+
+* Profanity Detection
+* Automatic Audio Beep Censoring
+* NSFW Content Detection
+* Sensitive Region Moderation
+* Safe Content Rendering
+
+### 👁️ Computer Vision
+
+* Object Detection
+* Scene Understanding
+* Frame Analysis
+* Video Moderation
+* AI-Based Content Filtering
+
+### 🎬 Smart Video Editing
+
+* Automated Editing Pipeline
+* Quick Look Color Grading Presets
+* Rendering Automation
+* Video Export Engine
+* Workflow Optimization
+
+### 🌍 AI Dubbing
+
+* Transcript Processing
+* Speech Alignment
+* Timestamp Synchronization
+* Multilingual Content Support
+
+---
+
+## ⚡ Architecture
+
+Video Input
+
+↓
+
+Speech Processing (WhisperX)
+
+↓
+
+Word-Level Timestamps
+
+↓
+
+AI Moderation Layer
+
+↓
+
+Computer Vision Analysis
+
+↓
+
+Subtitle & Dubbing Engine
+
+↓
+
+Rendering Pipeline (FFmpeg)
+
+↓
+
+Final Production-Ready Output
+
+---
+
+## 🧠 Technologies Used
+
+### Backend
+
+* Python
+* FastAPI
+* FFmpeg
+* OpenCV
+
+### AI & Machine Learning
+
+* WhisperX
+* YOLOv8
+* NudeNet
+* MediaPipe
+* PyTorch
+* Transformers
+
+### Processing
+
+* Audio Processing
+* Video Processing
+* Computer Vision
+* NLP
+* Generative AI
+
+---
+
+## 🎯 Key Features
+
+✅ Automatic Transcription
+
+✅ Word-Level Timestamps
+
+✅ Profanity Moderation
+
+✅ Automated Audio Beep Overlay
+
+✅ NSFW Detection & Moderation
+
+✅ Object Detection
+
+✅ Subtitle Generation
+
+✅ AI Dubbing Workflow
+
+✅ Quick Look Color Presets
+
+✅ Rendering Automation
+
+✅ Production Export Pipeline
+
+---
+
+## 🚧 Project Status
+
+Actively Under Development
+
+New AI modules, moderation improvements, dubbing enhancements, and editing capabilities are continuously being integrated.
+
+---
+
+## 🛡️ Vision
+
+EDITRA is not just another video editor.
+
+It is an AI-first editing ecosystem built to understand content, automate moderation, accelerate production workflows, and reduce manual effort through intelligent decision-making.
+
+The goal is simple:
+
+**Less Editing. More Creating.**
+
+---
+
+## 👨‍💻 Author
+
+**Chandramouli Boppana**
+
+AI Engineer | Generative AI Builder | Computer Vision Enthusiast
+
+Building the future where AI edits, understands, and enhances content at scale.
+
+---
+
+### ⭐ If you find this project interesting, consider starring the repository.
