@@ -279,44 +279,50 @@ async def apply_quicklook_preset(video: UploadFile = File(...), preset: str = Fo
     with open(input_path, "wb") as buffer:
         shutil.copyfileobj(video.file, buffer)
     
-    # 2. Map preset to LUT
-    lut_filename = f"{preset.lower().replace(' ', '_').replace('&', '')}.cube"
-    # Handling specific cases if necessary
-    if preset.lower() == "teal & orange":
-        lut_filename = "teal_orange.cube"
-        
-    lut_path = os.path.join(os.path.dirname(__file__), "presets", "luts", lut_filename)
+    print("QUICK LOOK PRESET SELECTED ✓")
     
-    if not os.path.exists(lut_path):
-        # Fallback to a basic color EQ if LUT doesn't exist, though we generated them
-        print(f"Warning: LUT {lut_path} not found.")
-        raise HTTPException(status_code=400, detail="Preset LUT not found.")
+    # 2. Map preset to FFmpeg color grading filter profile
+    preset_clean = preset.strip().lower()
+    if preset_clean == "cinematic":
+        ffmpeg_filter = "eq=contrast=1.15:saturation=0.85,colorbalance=rs=-0.1:gs=0.03:bs=0.1:rh=0.12:gh=0.04:bh=-0.08"
+    elif preset_clean == "vibrant":
+        ffmpeg_filter = "eq=contrast=1.2:saturation=1.4"
+    elif preset_clean == "monochrome":
+        ffmpeg_filter = "format=gray,eq=contrast=1.2"
+    elif preset_clean == "vintage":
+        ffmpeg_filter = "eq=contrast=0.85:brightness=0.05:saturation=0.75,colorbalance=rs=0.05:gs=0.02:bs=-0.05:rm=0.12:gm=0.06:bm=-0.12:rh=0.10:gh=0.05:bh=-0.10"
+    elif preset_clean == "moody":
+        ffmpeg_filter = "eq=contrast=1.3:brightness=-0.05:saturation=0.75"
+    elif preset_clean in ("teal & orange", "teal and orange", "teal_orange"):
+        ffmpeg_filter = "eq=contrast=1.15:saturation=1.1,colorbalance=rs=-0.15:gs=0.08:bs=0.15:rm=0.15:gm=0.02:bm=-0.12:rh=0.18:gh=0.05:bh=-0.15"
+    else:
+        raise HTTPException(status_code=400, detail=f"Preset '{preset}' not supported.")
+
+    print("COLOR GRADING PROFILE APPLIED ✓")
     
-    # Convert path to forward slashes for FFmpeg on Windows
-    lut_path_ffmpeg = lut_path.replace("\\", "/")
-    # Escape colon for FFmpeg filter (e.g., C:/path -> C\:/path)
-    if ":" in lut_path_ffmpeg:
-        lut_path_ffmpeg = lut_path_ffmpeg.replace(":", "\\:")
-    
-    # 3. Apply FFmpeg LUT
+    # 3. Apply FFmpeg filter
     output_filename = f"ql_output_{unique_id}.mp4"
     output_path = os.path.join(OUTPUT_FOLDER, output_filename)
     
     cmd = [
         "ffmpeg", "-y",
         "-i", input_path,
-        "-vf", f"lut3d='{lut_path_ffmpeg}'",
+        "-vf", ffmpeg_filter,
         "-c:a", "copy",
         output_path
     ]
     
     print(f"Executing Quick Look preset: {' '.join(cmd)}")
+    print("FFMPEG COLOR FILTER APPLIED ✓")
+    
     process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
     if process.returncode != 0 or not os.path.exists(output_path):
         print(f"FFmpeg error: {process.stderr.decode('utf-8', errors='ignore')}")
         raise HTTPException(status_code=500, detail="Failed to apply color grading preset.")
         
+    print("QUICK LOOK RENDER COMPLETE ✓")
+    
     # Return the path so frontend can download/preview it
     return {"status": "success", "url": f"/download/{output_filename}"}
 
